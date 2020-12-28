@@ -3,6 +3,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media.Imaging;
 
 namespace Demo_Accord
 {
@@ -20,7 +22,8 @@ namespace Demo_Accord
             var videoDevices = VideoCapture.EnumerateVideoDevices();
             this.cb_devices.ItemsSource = videoDevices;
 
-            Closed += delegate { videoCapture?.Dispose(); };
+            this.Closed += delegate { videoCapture?.Dispose(); };
+            this.canvas.MouseLeftButtonDown += OnCanvasMouseLeftButtonDown;
         }
 
         private void btn_start_Click(object sender, RoutedEventArgs e)
@@ -130,5 +133,92 @@ namespace Demo_Accord
                     MessageBox.Show(errMsg);
             }
         }
+
+        private void OnCanvasMouseLeftButtonDown(Object sender, MouseButtonEventArgs e)
+        {
+            if (videoCapture == null || !videoCapture.IsStarted || videoCapture.IsRecording)
+                return;
+
+            if (e.Handled = canvas.CaptureMouse())
+            {
+                canvas.MouseMove += OnCancasMouseMove;
+                canvas.MouseLeftButtonUp += OnCanvasMouseLeftButtonUp;
+
+                startPoint = e.GetPosition(canvas);
+            }
+        }
+
+        private void OnCancasMouseMove(Object sender, MouseEventArgs e)
+        {
+            var point = e.GetPosition(canvas);
+            geometry_rect.Rect = new Rect(startPoint, point);
+
+            e.Handled = true;
+        }
+
+        private void OnCanvasMouseLeftButtonUp(Object sender, MouseButtonEventArgs e)
+        {
+            canvas.MouseMove -= OnCancasMouseMove;
+            canvas.MouseLeftButtonUp -= OnCanvasMouseLeftButtonUp;
+
+            var endPoint = e.GetPosition(canvas);
+
+            canvas.ReleaseMouseCapture();
+            e.Handled = true;
+
+            geometry_rect.Rect = new Rect();
+
+            #region 计算选择区域
+
+            var rect = new Rect
+            {
+                X = (canvas.ActualWidth - img.ActualWidth) / 2,
+                Y = (canvas.ActualHeight - img.ActualHeight) / 2,
+                Width = img.ActualWidth,
+                Height = img.ActualHeight
+            };
+
+            // 矫正起始点
+            CorrectPoint(ref rect, ref startPoint);
+            CorrectPoint(ref rect, ref endPoint);
+
+            if (startPoint.X != endPoint.X && startPoint.Y != endPoint.Y)
+            {
+                var x = Math.Min(startPoint.X, endPoint.X) / img.ActualWidth;
+                var y = Math.Min(startPoint.Y, endPoint.Y) / img.ActualHeight;
+                var w = Math.Abs(startPoint.X - endPoint.X) / img.ActualWidth;
+                var h = Math.Abs(startPoint.Y - endPoint.Y) / img.ActualHeight;
+
+                var bmp_rect = videoCapture.RenderRect;
+
+                w *= bmp_rect.Width;
+                h *= bmp_rect.Height;
+                x = bmp_rect.X + x * bmp_rect.Width;
+                y = bmp_rect.Y + y * bmp_rect.Height;
+
+                if (!videoCapture.SetRenderRect(new Rect(x, y, w, h), out String errMsg))
+                    MessageBox.Show(errMsg);
+            }
+
+            #endregion
+        }
+
+        private void CorrectPoint(ref Rect rect, ref Point point)
+        {
+            point.X -= rect.X;
+            point.Y -= rect.Y;
+
+            if (point.X < 0)
+                point.X = 0;
+            else if (point.X > rect.Width)
+                point.X = rect.Width;
+
+            if (point.Y < 0)
+                point.Y = 0;
+            else if (point.Y > rect.Height)
+                point.Y = rect.Height;
+        }
+
+        private Point startPoint;
     }
 }

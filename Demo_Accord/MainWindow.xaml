@@ -22,8 +22,15 @@
                 <ComboBox x:Name="cb_capabilities" MinWidth="100" Margin="10 0 0 0" VerticalContentAlignment="Center" Padding="5 3" ItemsSource="{Binding SelectedItem.VideoCapabilities,ElementName=cb_devices}" />
             </StackPanel>
         </DockPanel>
-        <Border Background="Gray" Margin="5">
+        <Grid Background="Gray" Margin="5">
             <Image x:Name="img" />
-        </Border>
+            <Canvas x:Name="canvas" Background="Transparent">
+                <Path Stroke="Red" StrokeThickness="2" IsHitTestVisible="False">
+                    <Path.Data>
+                        <RectangleGeometry x:Name="geometry_rect" />
+                    </Path.Data>
+                </Path>
+            </Canvas>
+        </Grid>
     </DockPanel>
 </Window>

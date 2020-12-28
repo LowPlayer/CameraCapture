@@ -4,6 +4,7 @@ using Accord.Video.FFMPEG;
 using Demo_Accord.Model;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -58,9 +59,14 @@ namespace Demo_Accord
         String Name { get; }
 
         /// <summary>
-        /// 当前图像大小
+        /// 当前图像大小，单位px
         /// </summary>
         Size ImageSize { get; }
+
+        /// <summary>
+        /// 获取相对渲染区域
+        /// </summary>
+        Rect RenderRect { get; }
 
         /// <summary>
         /// 是否开始采集
@@ -229,7 +235,13 @@ namespace Demo_Accord
                 videoFileWriter.Open(videoFile, bmp_absolute_rect.Width, bmp_absolute_rect.Height, videoCapabilities.AverageFrameRate, VideoCodec.MPEG4);
 
                 if (videoFileWriter.IsOpen)
+                {
+                    this.perTicks = 1000 / videoCapabilities.AverageFrameRate;
                     this.videoFile = videoFile;
+
+                    if (this.stopwatch == null)
+                        this.stopwatch = new Stopwatch();
+                }
 
                 return IsRecording;
             }
@@ -254,6 +266,8 @@ namespace Demo_Accord
             videoFileWriter.Close();
             videoFileWriter.Dispose();
             videoFileWriter = null;
+
+            this.stopwatch.Reset();
 
             return true;
         }
@@ -351,7 +365,18 @@ namespace Demo_Accord
             }
 
             if (IsRecording)
-                videoFileWriter.WriteVideoFrame(bmpData);
+            {
+                if (!stopwatch.IsRunning)
+                {
+                    stopwatch.Start();
+                    videoFileWriter.WriteVideoFrame(bmpData);
+                }
+                else
+                {
+                    var frameIndex = stopwatch.ElapsedMilliseconds / this.perTicks;
+                    videoFileWriter.WriteVideoFrame(bmpData, (UInt32)frameIndex);
+                }
+            }
 
             bmp.UnlockBits(bmpData);
             bmp.Dispose();
@@ -384,6 +409,8 @@ namespace Demo_Accord
         public String Name { get; }
 
         public Size ImageSize => new Size(bmp_absolute_rect.Width, bmp_absolute_rect.Height);
+
+        public Rect RenderRect => relativeRect;
 
         public Boolean IsStarted => videoCaptureDevice.IsRunning;
 
@@ -432,6 +459,8 @@ namespace Demo_Accord
         private IntPtr bmp_backBuffer;  // WriteableBitmap的后台缓冲指针
         private VideoFileWriter videoFileWriter;    // 视频写入文件
         private String videoFile;                   // 正在写入的视频文件
+        private Stopwatch stopwatch;
+        private Int64 perTicks;
 
         #endregion
     }
