@@ -236,7 +236,7 @@ namespace Demo_Accord
 
                 if (videoFileWriter.IsOpen)
                 {
-                    this.perTicks = 1000 / videoCapabilities.AverageFrameRate;
+                    this.spf = 1000 / videoCapabilities.AverageFrameRate;
                     this.videoFile = videoFile;
 
                     if (this.stopwatch == null)
@@ -373,7 +373,7 @@ namespace Demo_Accord
                 }
                 else
                 {
-                    var frameIndex = stopwatch.ElapsedMilliseconds / this.perTicks;
+                    var frameIndex = stopwatch.ElapsedMilliseconds / this.spf;
                     videoFileWriter.WriteVideoFrame(bmpData, (UInt32)frameIndex);
                 }
             }
@@ -459,8 +459,8 @@ namespace Demo_Accord
         private IntPtr bmp_backBuffer;  // WriteableBitmap的后台缓冲指针
         private VideoFileWriter videoFileWriter;    // 视频写入文件
         private String videoFile;                   // 正在写入的视频文件
-        private Stopwatch stopwatch;
-        private Int64 perTicks;
+        private Stopwatch stopwatch;    // 录像计时
+        private Int64 spf;              // 一帧多少毫秒
 
         #endregion
     }
