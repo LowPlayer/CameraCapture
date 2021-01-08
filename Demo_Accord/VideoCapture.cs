@@ -368,13 +368,19 @@ namespace Demo_Accord
             {
                 if (!stopwatch.IsRunning)
                 {
-                    stopwatch.Start();
+                    stopwatch.Restart();
+                    frameIndex = 0;
                     videoFileWriter.WriteVideoFrame(bmpData);
                 }
                 else
                 {
-                    var frameIndex = stopwatch.ElapsedMilliseconds / this.spf;
-                    videoFileWriter.WriteVideoFrame(bmpData, (UInt32)frameIndex);
+                    var frame_index = (UInt32)(stopwatch.ElapsedMilliseconds / spf);
+
+                    if (frameIndex != frame_index)
+                    {
+                        frameIndex = frame_index;
+                        videoFileWriter.WriteVideoFrame(bmpData, frameIndex);
+                    }
                 }
             }
 
@@ -461,6 +467,7 @@ namespace Demo_Accord
         private String videoFile;                   // 正在写入的视频文件
         private Stopwatch stopwatch;    // 录像计时
         private Int64 spf;              // 一帧多少毫秒
+        private UInt32 frameIndex;       // 当前帧
 
         #endregion
     }
