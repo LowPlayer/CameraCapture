@@ -95,7 +95,7 @@ namespace Demo_Accord
         /// <returns></returns>
         public static IEnumerable<VideoDevice> EnumerateVideoDevices()
         {
-            var videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+            var videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);       // 筛选视频输入设备
 
             foreach (var videoDevice in videoDevices)
             {
@@ -104,13 +104,13 @@ namespace Demo_Accord
 
                 yield return new VideoDevice
                 {
-                    FriendlyName = videoDevice.Name,
-                    MonikerName = videoDevice.MonikerString,
+                    FriendlyName = videoDevice.Name,    // 设备的友好名称
+                    MonikerName = videoDevice.MonikerString,    // 设备的唯一标识符，用于区分哪个设备
                     VideoCapabilities = videoCaptureDevice.VideoCapabilities.Select(q => new VideoCapabilities
                     {
-                        FrameWidth = q.FrameSize.Width,
-                        FrameHeight = q.FrameSize.Height,
-                        AverageFrameRate = q.AverageFrameRate
+                        FrameWidth = q.FrameSize.Width,     // 帧宽
+                        FrameHeight = q.FrameSize.Height,   // 帧高
+                        AverageFrameRate = q.AverageFrameRate   // 平均帧率
                     })
                 };
             }
@@ -130,21 +130,21 @@ namespace Demo_Accord
             this.device = device;
             this.videoCapabilities = videoCapabilities;
 
-            Name = device.FriendlyName;
-            videoCaptureDevice = new VideoCaptureDevice(device.MonikerName);
+            Name = device.FriendlyName;     // 相机名称
+            videoCaptureDevice = new VideoCaptureDevice(device.MonikerName);    // 视频输入设备
 
             var capabilities = videoCaptureDevice.VideoCapabilities.FirstOrDefault(q => q.FrameSize.Width == videoCapabilities.FrameWidth
             && q.FrameSize.Height == videoCapabilities.FrameHeight && q.AverageFrameRate == videoCapabilities.AverageFrameRate);
 
             if (capabilities != null)
-                videoCaptureDevice.VideoResolution = capabilities;
+                videoCaptureDevice.VideoResolution = capabilities;      // 选择采集参数
 
-            videoCaptureDevice.NewFrame += OnNewFrame;
+            videoCaptureDevice.NewFrame += OnNewFrame;      // 监听视频帧回调
 
-            relativeRect = bmp_relative_rect = new Rect(new Size(1, 1));
+            relativeRect = bmp_relative_rect = new Rect(new Size(1, 1));    // 设置完整裁剪区域
 
-            bmp_absolute_rect.Width = frameWidth = videoCapabilities.FrameWidth;
-            bmp_absolute_rect.Height = frameHeight = videoCapabilities.FrameHeight;
+            bmp_absolute_rect.Width = frameWidth = videoCapabilities.FrameWidth;    // 帧宽
+            bmp_absolute_rect.Height = frameHeight = videoCapabilities.FrameHeight; // 帧高
         }
 
         #region Public Methods
@@ -154,7 +154,7 @@ namespace Demo_Accord
             errMsg = null;
 
             if (!videoCaptureDevice.IsRunning)
-                videoCaptureDevice.Start();
+                videoCaptureDevice.Start();     // 打开设备
 
             return true;
         }
@@ -164,7 +164,7 @@ namespace Demo_Accord
             errMsg = null;
 
             if (videoCaptureDevice.IsRunning)
-                videoCaptureDevice.Stop();
+                videoCaptureDevice.Stop();      // 关闭设备
 
             return true;
         }
@@ -175,6 +175,7 @@ namespace Demo_Accord
 
             if (writeableBitmap == null)
             {
+                // 等待画面渲染
                 SpinWait.SpinUntil(() => { return writeableBitmap != null || !IsStarted; });
 
                 if (writeableBitmap == null || IsStarted)
@@ -183,6 +184,7 @@ namespace Demo_Accord
 
             try
             {
+                // 将WriteableBitmap保存成jpg
                 var renderTargetBitmap = new RenderTargetBitmap(writeableBitmap.PixelWidth, writeableBitmap.PixelHeight, writeableBitmap.DpiX, writeableBitmap.DpiY, PixelFormats.Default);
 
                 DrawingVisual drawingVisual = new DrawingVisual();
@@ -232,15 +234,15 @@ namespace Demo_Accord
                     Directory.CreateDirectory(folder);
 
                 videoFileWriter = new VideoFileWriter();
-                videoFileWriter.Open(videoFile, bmp_absolute_rect.Width, bmp_absolute_rect.Height, videoCapabilities.AverageFrameRate, VideoCodec.MPEG4);
+                videoFileWriter.Open(videoFile, bmp_absolute_rect.Width, bmp_absolute_rect.Height, videoCapabilities.AverageFrameRate, VideoCodec.MPEG4);   // 帧率从采集参数获取，以MP4格式保存
 
                 if (videoFileWriter.IsOpen)
                 {
-                    this.spf = 1000 / videoCapabilities.AverageFrameRate;
+                    this.spf = 1000 / videoCapabilities.AverageFrameRate;   // 计算一帧所需毫秒数
                     this.videoFile = videoFile;
 
                     if (this.stopwatch == null)
-                        this.stopwatch = new Stopwatch();
+                        this.stopwatch = new Stopwatch();   // 初始化计时器，计算每一帧的时间错
                 }
 
                 return IsRecording;
@@ -297,10 +299,10 @@ namespace Demo_Accord
         public void Dispose()
         {
             if (IsRecording)
-                EndRecord(out _, out _);
+                EndRecord(out _, out _);    // 停止录像
 
             if (IsStarted)
-                Stop(out _);
+                Stop(out _);    // 关闭设备
 
             writeableBitmap = null;
             ImageSourceChanged = null;
@@ -368,18 +370,18 @@ namespace Demo_Accord
             {
                 if (!stopwatch.IsRunning)
                 {
-                    stopwatch.Restart();
+                    stopwatch.Restart();    // 启动计时器
                     frameIndex = 0;
-                    videoFileWriter.WriteVideoFrame(bmpData);
+                    videoFileWriter.WriteVideoFrame(bmpData);   // 写入第一帧
                 }
                 else
                 {
-                    var frame_index = (UInt32)(stopwatch.ElapsedMilliseconds / spf);
+                    var frame_index = (UInt32)(stopwatch.ElapsedMilliseconds / spf);    // 计算当前帧是第几帧
 
                     if (frameIndex != frame_index)
                     {
                         frameIndex = frame_index;
-                        videoFileWriter.WriteVideoFrame(bmpData, frameIndex);
+                        videoFileWriter.WriteVideoFrame(bmpData, frameIndex);   // 只有不同帧索引才写入，否则会引发异常
                     }
                 }
             }
