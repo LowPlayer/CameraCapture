@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ClrDirectShow.h">
+    <ClInclude Include="CSharpDirectShow.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
@@ -26,7 +26,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ClrDirectShow.cpp">
+    <ClCompile Include="CSharpDirectShow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="AssemblyInfo.cpp">

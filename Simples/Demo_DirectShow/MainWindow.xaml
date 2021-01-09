@@ -1,0 +1,36 @@
+﻿<Window x:Class="Demo_DirectShow.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="DirectShow" Height="720" Width="1280"
+        UseLayoutRounding="True" SnapsToDevicePixels="True" FontSize="15">
+    <DockPanel Margin="5">
+        <DockPanel DockPanel.Dock="Top" Height="32" Margin="5">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="20 0 0 0">
+                <Button x:Name="btn_start" MinWidth="75" Click="btn_start_Click">开始采集</Button>
+                <Button x:Name="btn_take" MinWidth="75" Margin="20 0 0 0" IsEnabled="False" Click="btn_take_Click">拍照</Button>
+                <Button x:Name="btn_record" MinWidth="75" Margin="20 0 0 0" IsEnabled="False" Click="btn_record_Click">开始录像</Button>
+                <TextBox x:Name="input_rect" MinWidth="100" Margin="30 0 0 0" VerticalContentAlignment="Center" Padding="5 3" InputMethod.IsInputMethodEnabled="False" Text="0,0,1,1" />
+                <Button x:Name="btn_rect" MinWidth="75" Margin="10 0 0 0" Click="btn_rect_Click" IsEnabled="False">选择区域</Button>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Foreground="DimGray">设备选择</TextBlock>
+                <ComboBox x:Name="cb_devices" MinWidth="100" Margin="10 0 0 0" VerticalContentAlignment="Center" Padding="5 3" DisplayMemberPath="FriendlyName" />
+                <TextBlock VerticalAlignment="Center" Foreground="DimGray" Margin="20 0 0 0">采集参数设置</TextBlock>
+                <ComboBox x:Name="cb_capabilities" MinWidth="100" Margin="10 0 0 0" VerticalContentAlignment="Center" Padding="5 3" ItemsSource="{Binding SelectedItem.VideoCapabilities,ElementName=cb_devices}" />
+            </StackPanel>
+        </DockPanel>
+        <Grid Background="Gray" Margin="5">
+            <Image x:Name="img" />
+            <Canvas x:Name="canvas" Background="Transparent">
+                <Path Stroke="Red" StrokeThickness="2" IsHitTestVisible="False">
+                    <Path.Data>
+                        <RectangleGeometry x:Name="geometry_rect" />
+                    </Path.Data>
+                </Path>
+            </Canvas>
+        </Grid>
+    </DockPanel>
+</Window>

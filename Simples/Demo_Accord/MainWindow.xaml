@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="MainWindow" Height="720" Width="1280"
+        Title="Accord.Net" Height="720" Width="1280"
         UseLayoutRounding="True" SnapsToDevicePixels="True" FontSize="15">
     <DockPanel Margin="5">
         <DockPanel DockPanel.Dock="Top" Height="32" Margin="5">
