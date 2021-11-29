@@ -233,16 +233,19 @@ namespace Demo_Accord
                 if (!Directory.Exists(folder))
                     Directory.CreateDirectory(folder);
 
-                videoFileWriter = new VideoFileWriter();
-                videoFileWriter.Open(videoFile, bmp_absolute_rect.Width, bmp_absolute_rect.Height, videoCapabilities.AverageFrameRate, VideoCodec.MPEG4);   // 帧率从采集参数获取，以MP4格式保存
-
-                if (videoFileWriter.IsOpen)
+                lock (recordLocker)
                 {
-                    this.spf = 1000 / videoCapabilities.AverageFrameRate;   // 计算一帧所需毫秒数
-                    this.videoFile = videoFile;
+                    videoFileWriter = new VideoFileWriter();
+                    videoFileWriter.Open(videoFile, bmp_absolute_rect.Width, bmp_absolute_rect.Height, videoCapabilities.AverageFrameRate, VideoCodec.MPEG4);   // 帧率从采集参数获取，以MP4格式保存
 
-                    if (this.stopwatch == null)
-                        this.stopwatch = new Stopwatch();   // 初始化计时器，计算每一帧的时间错
+                    if (videoFileWriter.IsOpen)
+                    {
+                        this.spf = 1000 / videoCapabilities.AverageFrameRate;   // 计算一帧所需毫秒数
+                        this.videoFile = videoFile;
+
+                        if (this.stopwatch == null)
+                            this.stopwatch = new Stopwatch();   // 初始化计时器，计算每一帧的时间错
+                    }
                 }
 
                 return IsRecording;
@@ -262,14 +265,17 @@ namespace Demo_Accord
             if (!IsRecording)
                 return true;
 
-            videoFile = this.videoFile;
-            this.videoFile = null;
+            lock (recordLocker)
+            {
+                videoFile = this.videoFile;
+                this.videoFile = null;
 
-            videoFileWriter.Close();
-            videoFileWriter.Dispose();
-            videoFileWriter = null;
+                videoFileWriter.Close();
+                videoFileWriter.Dispose();
+                videoFileWriter = null;
 
-            this.stopwatch.Reset();
+                this.stopwatch.Reset();
+            }
 
             return true;
         }
@@ -328,6 +334,12 @@ namespace Demo_Accord
                 bmp_absolute_rect.Width = (Int32)(bmp.Width * relativeRect.Width);
                 bmp_absolute_rect.Height = (Int32)(bmp.Height * relativeRect.Height);
 
+                // 图像宽高必须是整数
+                if (bmp_absolute_rect.Width % 2 != 0)
+                    bmp_absolute_rect.Width--;
+                if (bmp_absolute_rect.Height % 2 != 0)
+                    bmp_absolute_rect.Height--;
+
                 context.Send(n =>
                 {
                     writeableBitmap = new WriteableBitmap(bmp_absolute_rect.Width, bmp_absolute_rect.Height, 96, 96, PixelFormats.Bgr24, null);
@@ -368,20 +380,26 @@ namespace Demo_Accord
 
             if (IsRecording)
             {
-                if (!stopwatch.IsRunning)
+                lock (recordLocker)
                 {
-                    stopwatch.Restart();    // 启动计时器
-                    frameIndex = 0;
-                    videoFileWriter.WriteVideoFrame(bmpData);   // 写入第一帧
-                }
-                else
-                {
-                    var frame_index = (UInt32)(stopwatch.ElapsedMilliseconds / spf);    // 计算当前帧是第几帧
-
-                    if (frameIndex != frame_index)
+                    if (IsRecording)
                     {
-                        frameIndex = frame_index;
-                        videoFileWriter.WriteVideoFrame(bmpData, frameIndex);   // 只有不同帧索引才写入，否则会引发异常
+                        if (!stopwatch.IsRunning)
+                        {
+                            stopwatch.Restart();    // 启动计时器
+                            frameIndex = 0;
+                            videoFileWriter.WriteVideoFrame(bmpData);   // 写入第一帧
+                        }
+                        else
+                        {
+                            var frame_index = (UInt32)(stopwatch.ElapsedMilliseconds / spf);    // 计算当前帧是第几帧
+
+                            if (frameIndex != frame_index)
+                            {
+                                frameIndex = frame_index;
+                                videoFileWriter.WriteVideoFrame(bmpData, frameIndex);   // 只有不同帧索引才写入，否则会引发异常
+                            }
+                        }
                     }
                 }
             }
@@ -422,7 +440,7 @@ namespace Demo_Accord
 
         public Boolean IsStarted => videoCaptureDevice.IsRunning;
 
-        public Boolean IsRecording => videoFileWriter != null && videoFileWriter.IsOpen;
+        public Boolean IsRecording => videoFileWriter != null && videoFileWriter.IsOpen && stopwatch != null;
 
         public Action<ImageSource> ImageSourceChanged { get; set; }
 
@@ -470,6 +488,8 @@ namespace Demo_Accord
         private Stopwatch stopwatch;    // 录像计时
         private Int64 spf;              // 一帧多少毫秒
         private UInt32 frameIndex;       // 当前帧
+
+        private object recordLocker = new object();     // 录像同步锁 
 
         #endregion
     }
